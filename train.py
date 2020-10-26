@@ -63,7 +63,7 @@ def train():
     f = open(os.path.join(args.log_dir, log_name + ".txt"), "w")
 
      # 读入fixed图像
-    input_fixed = Image.open("output/dog.png").convert('L') #转灰度图
+    input_fixed = Image.open("1.png").convert('L') #转灰度图
     
 
     input_fixed = transform(input_fixed) # 将图片(Image)转成Tensor，归一化至[0, 1]
@@ -119,38 +119,39 @@ def train():
     # Training loop.
     for i in range(1, args.n_iter + 1):
         # 加载浮动图像并转换成Tensor        Generate the moving images and convert them to tensors.
-        input_moving,_ = next(dataiter)
-        print("浮动图像:",input_moving.size())
-        
-        # [B, C, D, W, H]
-        input_moving = input_moving.to(device).float()
+        for idx, (input_moving, ref) in enumerate(dataloader):
+            #input_moving,_ = next(dataiter)
+            #print("浮动图像:",input_moving.size())
+            
+            # 2D-[B, C, W, H]     3D-[B, C, D, W, H]
+            input_moving = input_moving.to(device).float()
 
-        # Run the data through the model to produce warp and flow field
-        flow_m2f = UNet(input_moving, input_fixed)
-        m2f = STN(input_moving, flow_m2f)
+            # Run the data through the model to produce warp and flow field
+            flow_m2f = UNet(input_moving, input_fixed)
+            m2f = STN(input_moving, flow_m2f)
 
-        # Calculate loss
-        sim_loss = sim_loss_fn(m2f, input_fixed)
-        grad_loss = grad_loss_fn(flow_m2f)
-        loss = sim_loss + args.alpha * grad_loss
-        print("i: %d  loss: %f  sim: %f  grad: %f" % (i, loss.item(), sim_loss.item(), grad_loss.item()), flush=True)
-        print("%d, %f, %f, %f" % (i, loss.item(), sim_loss.item(), grad_loss.item()), file=f)
+            # Calculate loss
+            sim_loss = sim_loss_fn(m2f, input_fixed)    # 互信息损失
+            grad_loss = grad_loss_fn(flow_m2f)          # 位移场平滑损失
+            loss = sim_loss + args.alpha * grad_loss        
+            print("i: %d  loss: %f  sim: %f  grad: %f" % (i, loss.item(), sim_loss.item(), grad_loss.item()), flush=True)
+            print("%d, %f, %f, %f" % (i, loss.item(), sim_loss.item(), grad_loss.item()), file=f)
 
-        # Backwards and optimize
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
+            # Backwards and optimize
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
 
-        if i % args.n_save_iter == 0:
-            # Save model checkpoint
-            save_file_name = os.path.join(args.model_dir, '%d.pth' % i)
-            torch.save(UNet.state_dict(), save_file_name)
-            # Save images
-            m_name = str(i) + "_m.nii.gz"
-            m2f_name = str(i) + "_m2f.nii.gz"
-            save_image(input_moving, f_img, m_name)
-            save_image(m2f, f_img, m2f_name)
-            print("warped images have saved.")
+            if i % args.n_save_iter == 0:
+                # Save model checkpoint
+                save_file_name = os.path.join(args.model_dir, '%d.pth' % i)
+                torch.save(UNet.state_dict(), save_file_name)
+                # Save images
+                m_name = str(i) + "_m.nii.gz"
+                m2f_name = str(i) + "_m2f.nii.gz"
+                save_image(input_moving, f_img, m_name)
+                save_image(m2f, f_img, m2f_name)
+                print("warped images have saved.")
     f.close()
 
 

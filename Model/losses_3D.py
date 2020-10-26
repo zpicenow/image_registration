@@ -12,16 +12,16 @@ import torch.nn.functional as F
 
 
 def gradient_loss(s, penalty='l2'):
-    dy = torch.abs(s[:, :, 1:, :] - s[:, :, :-1, :])
-    dx = torch.abs(s[:, :, :, 1:] - s[:, :, :, :-1])
-
+    dy = torch.abs(s[:, :, 1:, :, :] - s[:, :, :-1, :, :])
+    dx = torch.abs(s[:, :, :, 1:, :] - s[:, :, :, :-1, :])
+    dz = torch.abs(s[:, :, :, :, 1:] - s[:, :, :, :, :-1])
 
     if (penalty == 'l2'):
         dy = dy * dy
         dx = dx * dx
+        dz = dz * dz
 
-
-    d = torch.mean(dx) + torch.mean(dy)
+    d = torch.mean(dx) + torch.mean(dy) + torch.mean(dz)
     return d / 3.0
 
 
@@ -56,11 +56,11 @@ def ncc_loss(I, J, win=None):
 
 def compute_local_sums(I, J, filt, stride, padding, win):
     I2, J2, IJ = I * I, J * J, I * J
-    I_sum = F.conv2d(I, filt, stride=stride, padding=padding)
-    J_sum = F.conv2d(J, filt, stride=stride, padding=padding)
-    I2_sum = F.conv2d(I2, filt, stride=stride, padding=padding)
-    J2_sum = F.conv2d(J2, filt, stride=stride, padding=padding)
-    IJ_sum = F.conv2d(IJ, filt, stride=stride, padding=padding)
+    I_sum = F.conv3d(I, filt, stride=stride, padding=padding)
+    J_sum = F.conv3d(J, filt, stride=stride, padding=padding)
+    I2_sum = F.conv3d(I2, filt, stride=stride, padding=padding)
+    J2_sum = F.conv3d(J2, filt, stride=stride, padding=padding)
+    IJ_sum = F.conv3d(IJ, filt, stride=stride, padding=padding)
     win_size = np.prod(win)
     u_I = I_sum / win_size
     u_J = J_sum / win_size

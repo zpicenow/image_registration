@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
-
+from torch.autograd import Variable
 class conv_block(nn.Module):
     def __init__(self, inChan, outChan, stride=1):
         super(conv_block, self).__init__()
@@ -56,26 +56,26 @@ class U_Network(nn.Module):
     # [B, C, D, W, H]           而2D图像为(B,C,W,H)
     def forward(self, src, tgt):
 
-        print("cat前图像:",src.shape)
+        #print("cat前图像:",src.shape)
         x = torch.cat([src, tgt], dim=1)    # 输入的是fixed图像与moving图像的拼接,通道加倍   (192, 160)
-        print("cat后图像:",x.shape)
+        #print("cat后图像:",x.shape)
 
         # 下采样    (左半边)
         skip1 = self.input_conv(x)  
-        print("skip1",skip1.shape)   
+        #print("skip1",skip1.shape)   
         skip2 = self.down1(skip1)
-        print("skip2",skip2.shape)
+        #print("skip2",skip2.shape)
         skip3 = self.down2(skip2)
-        print("skip3",skip3.shape)
+        #print("skip3",skip3.shape)
         skip4 = self.down3(skip3)
-        print("skip4",skip4.shape)
+        #print("skip4",skip4.shape)
         x = self.down4(skip4)
 
         # 上采样    (右半边)
         x = self.up1(x)
-        print("up1",x.shape)
+        #print("up1",x.shape)
         x = self.upsample(x)
-        print("up1_sample",x.shape)
+        #print("up1_sample",x.shape)
         x = torch.cat((x, skip4), dim=1)
 
         x = self.up2(x)
@@ -89,12 +89,12 @@ class U_Network(nn.Module):
         x = self.up4(x)
         x = self.upsample(x)
         x = torch.cat((x, skip1), dim=1)
-        print("up4",x.shape)
+        #print("up4",x.shape)
 
         x = self.same_conv(x)
-        print("same_conv",x.shape)
+        #print("same_conv",x.shape)
         flow = self.out_conv(x)
-        print("out_conv",x.shape)
+        #print("out_conv",x.shape)
 
         return flow
 
@@ -105,7 +105,7 @@ class SpatialTransformer(nn.Module):        #只需要包含网格生成器 与 
     def __init__(self, img_size, mode='bilinear'):
         super(SpatialTransformer, self).__init__()
         self.img_size = img_size
-        H, W = img_size, img_size
+        H, W = 512, 512
         # mesh grid 
         xx = torch.arange(0, W).view(1,-1).repeat(H,1)
         yy = torch.arange(0, H).view(-1,1).repeat(1,W)
@@ -113,26 +113,20 @@ class SpatialTransformer(nn.Module):        #只需要包含网格生成器 与 
         yy = yy.view(1,H,W)
         self.grid = torch.cat((xx,yy),0).float() # [2, H, W]
         
-        # # Create sampling grid
-        # vectors = [torch.arange(0, s) for s in size]
-        # grids = torch.meshgrid(vectors)
-        # grid = torch.stack(grids)  # y, x, z
-        # grid = torch.unsqueeze(grid, 0)  # add batch
-        # grid = grid.type(torch.FloatTensor)
-        # self.register_buffer('grid', grid)
+   
 
         self.mode = mode
 
     def forward(self, src, flow):
-        print("Now is STM网络's show time!!!!")
-        print("src:",src.shape,"  flow:",flow.shape)
+        #print("Now is STM网络's show time!!!!")
+        #print("src:",src.shape,"  flow:",flow.shape)
         grid = self.grid.repeat(flow.shape[0],1,1,1)#[bs, 2, H, W]
-        if img.is_cuda:
+        if src.is_cuda:
             grid = grid.cuda()
 
         vgrid = Variable(grid, requires_grad = False) + flow
  
-        vgrid = 2.0*vgrid/(self.img_size-1)-1.0 #max(W-1,1)
+        vgrid = 2.0*vgrid/(512-1)-1.0 #max(W-1,1)
  
         vgrid = vgrid.permute(0,2,3,1) 
         #output = F.grid_sample(src, vgrid)
