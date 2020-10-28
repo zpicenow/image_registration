@@ -16,17 +16,17 @@ parser.add_argument("--result_dir", type=str, help="results folder",
 parser.add_argument("--train_dir", type=str, help="data folder with training vols",
                     dest="train_dir", default="./LPBA40/train")
 parser.add_argument("--lr", type=float, help="learning rate",
-                    dest="lr", default=4e-4)
+                    dest="lr", default=1e-4)
 parser.add_argument("--n_iter", type=int, help="number of iterations",
                     dest="n_iter", default=15000)
 parser.add_argument("--sim_loss", type=str, help="image similarity loss: mse or ncc",
                     dest="sim_loss", default='ncc')
 parser.add_argument("--alpha", type=float, help="regularization parameter",
-                    dest="alpha", default=4.0)  # recommend 1.0 for ncc, 0.01 for mse
+                    dest="alpha", default=0.5)  # recommend 1.0 for ncc, 0.01 for mse
 parser.add_argument("--batch_size", type=int, help="batch_size",
-                    dest="batch_size", default=1)
+                    dest="batch_size", default=4)
 parser.add_argument("--n_save_iter", type=int, help="frequency of model saves",
-                    dest="n_save_iter", default=1000)
+                    dest="n_save_iter", default=5)
 parser.add_argument("--model_dir", type=str, help="models folder",
                     dest="model_dir", default='./Checkpoint')
 parser.add_argument("--log_dir", type=str, help="logs folder",

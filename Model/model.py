@@ -54,10 +54,11 @@ class U_Network(nn.Module):
 
     # 网络的输入格式是（batch_size,channels,rows,cols)
     # [B, C, D, W, H]           而2D图像为(B,C,W,H)
-    def forward(self, src, tgt):
+    def forward(self, src):
 
         #print("cat前图像:",src.shape)
-        x = torch.cat([src, tgt], dim=1)    # 输入的是fixed图像与moving图像的拼接,通道加倍   (192, 160)
+        x = src
+        #x = torch.cat([src, tgt], dim=1)    # 输入的是fixed图像与moving图像的拼接,通道加倍   (192, 160)
         #print("cat后图像:",x.shape)
 
         # 下采样    (左半边)
